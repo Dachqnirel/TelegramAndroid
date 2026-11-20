@@ -51,7 +51,8 @@ android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
 
-    defaultConfig.applicationId = "org.forkclient.messenger"
+    // Own package name: installs next to the regular Forkgram instead of clashing with its signature.
+    defaultConfig.applicationId = "org.quietgram.messenger"
 
 
     lintOptions {

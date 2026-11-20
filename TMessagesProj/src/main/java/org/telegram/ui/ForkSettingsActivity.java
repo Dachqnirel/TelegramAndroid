@@ -48,6 +48,7 @@ import org.telegram.messenger.forkgram.HiddenAccountHelper;
 import org.telegram.messenger.forkgram.LinkReplacements;
 import org.telegram.messenger.forkgram.QuickAttachConfig;
 import org.telegram.messenger.forkgram.SettingsBackup;
+import org.telegram.messenger.forkgram.StickerSearchBlock;
 import org.telegram.messenger.forkgram.WebPublishConfig;
 import org.telegram.messenger.forkgram.VoiceFileSize;
 import org.telegram.messenger.forkgram.VoiceTimecodesConfig;
@@ -125,6 +126,7 @@ public class ForkSettingsActivity extends BaseFragment {
     public static final int ID_FULL_RECENT_STICKERS = 44;
     public static final int ID_SHOW_ARCHIVED_STICKERS = 45;
     public static final int ID_STICKER_SIZE = 46;
+    public static final int ID_DISABLE_GLOBAL_STICKER_SEARCH = 47;
 
     public static final int ID_INAPP_CAMERA = 50;
     public static final int ID_SYSTEM_CAMERA = 51;
@@ -670,6 +672,8 @@ public class ForkSettingsActivity extends BaseFragment {
             .setChecked(pref("fullRecentStickers", true)).setMultiline(true));
         items.add(UItem.asButtonCheck(ID_SHOW_ARCHIVED_STICKERS, LocaleController.getString(R.string.ShowArchivedStickers), LocaleController.getString(R.string.ShowArchivedStickersInfo))
             .setChecked(pref("showArchivedStickers", false)).setMultiline(true));
+        items.add(UItem.asButtonCheck(ID_DISABLE_GLOBAL_STICKER_SEARCH, LocaleController.getString(R.string.DisableGlobalStickerSearch), LocaleController.getString(R.string.DisableGlobalStickerSearchInfo))
+            .setChecked(pref(StickerSearchBlock.KEY, false)).setMultiline(true));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(LocaleController.getString(R.string.StickerSize)));
@@ -882,6 +886,8 @@ public class ForkSettingsActivity extends BaseFragment {
             toggle("fullRecentStickers", item, view);
         } else if (id == ID_SHOW_ARCHIVED_STICKERS) {
             ForkSettings.applyEffect(currentAccount, "showArchivedStickers", toggle("showArchivedStickers", item, view));
+        } else if (id == ID_DISABLE_GLOBAL_STICKER_SEARCH) {
+            ForkSettings.applyEffect(currentAccount, StickerSearchBlock.KEY, toggle(StickerSearchBlock.KEY, item, view));
 
         } else if (id == ID_INAPP_CAMERA) {
             SharedConfig.toggleInappCamera();

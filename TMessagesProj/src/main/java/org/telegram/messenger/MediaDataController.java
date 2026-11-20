@@ -1761,7 +1761,9 @@ public class MediaDataController extends BaseController {
 
     public ArrayList<TLRPC.TL_messages_stickerSet> getStickerSets(int type) {
         if (type == TYPE_FEATURED) {
-            return stickerSets[2];
+            return org.telegram.messenger.forkgram.StickerSearchBlock.emptyIfEnabled(stickerSets[2]);
+        } else if (type == TYPE_FEATURED_EMOJIPACKS) {
+            return org.telegram.messenger.forkgram.StickerSearchBlock.emptyIfEnabled(stickerSets[type]);
         } else {
             return stickerSets[type];
         }
@@ -1772,11 +1774,11 @@ public class MediaDataController extends BaseController {
     }
 
     public ArrayList<TLRPC.StickerSetCovered> getFeaturedStickerSets() {
-        return featuredStickerSets[0];
+        return org.telegram.messenger.forkgram.StickerSearchBlock.emptyIfEnabled(featuredStickerSets[0]);
     }
 
     public ArrayList<TLRPC.StickerSetCovered> getFeaturedEmojiSets() {
-        return featuredStickerSets[1];
+        return org.telegram.messenger.forkgram.StickerSearchBlock.emptyIfEnabled(featuredStickerSets[1]);
     }
 
     public ArrayList<Long> getUnreadStickerSets() {

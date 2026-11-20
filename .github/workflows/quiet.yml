@@ -1,0 +1,104 @@
+name: Quiet build
+
+# Builds the patched Forkgram (global sticker search can be switched off)
+# and uploads the signed APK as a workflow artifact.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions):
+#   APP_ID, APP_HASH        - from https://my.telegram.org -> API development tools
+#   KEYSTORE_BASE64         - your release keystore, base64-encoded
+#   KEYSTORE_PASSWORD       - keystore password
+#   KEY_ALIAS               - key alias inside the keystore
+#   KEY_PASSWORD            - key password
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - quiet
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: false
+          android: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: nttld/setup-ndk@v1.4.2
+        with:
+          ndk-version: r27c
+          link-to-sdk: true
+
+      - name: Install NDK for the JNI build
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018"
+
+      - name: Check secrets
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          APP_HASH: ${{ secrets.APP_HASH }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in APP_ID APP_HASH KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name is not set"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Build
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          APP_HASH: ${{ secrets.APP_HASH }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+
+          vars=gradle.properties
+          {
+            echo ""
+            echo "org.gradle.workers.max=1"
+            echo "APP_ID=$APP_ID"
+            echo "APP_HASH=$APP_HASH"
+            echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore"
+            echo "RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "RELEASE_KEY_ALIAS=$KEY_ALIAS"
+            echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+            echo "CHECK_UPDATES=0"
+            echo "ADDITIONAL_BUILD_NUMBER=0"
+          } >> $vars
+
+          sudo apt update
+          sudo apt -y install ninja-build meson nasm gperf pkg-config unzip
+          rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+          rustup toolchain install 1.96.1 -t aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          ./gradlew :TMessagesProj_App:assembleAfatRelease
+
+          mkdir -p artifact
+          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk artifact/Quietgram.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Quietgram
+          path: artifact/Quietgram.apk
+          retention-days: 30

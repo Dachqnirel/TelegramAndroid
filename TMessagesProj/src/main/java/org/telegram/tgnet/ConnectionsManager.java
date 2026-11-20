@@ -409,6 +409,17 @@ public class ConnectionsManager extends BaseController {
 
     public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
+        final TLObject blockedResponse = org.telegram.messenger.forkgram.StickerSearchBlock.fakeResponse(object);
+        if (blockedResponse != null) {
+            Utilities.stageQueue.postRunnable(() -> {
+                if (onComplete != null) {
+                    onComplete.run(blockedResponse, null);
+                } else if (onCompleteTimestamp != null) {
+                    onCompleteTimestamp.run(blockedResponse, null, 0);
+                }
+            });
+            return requestToken;
+        }
         Utilities.stageQueue.postRunnable(() -> {
             sendRequestInternal(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate, requestToken);
         });

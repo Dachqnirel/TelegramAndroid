@@ -178,6 +178,7 @@ object ForkSettings {
 
         BoolOption("fullRecentStickers", ForkSettingsActivity.ID_FULL_RECENT_STICKERS, true),
         BoolOption("showArchivedStickers", ForkSettingsActivity.ID_SHOW_ARCHIVED_STICKERS, false),
+        BoolOption(StickerSearchBlock.KEY, ForkSettingsActivity.ID_DISABLE_GLOBAL_STICKER_SEARCH, false),
         FloatOption("stickerSize", ForkSettingsActivity.ID_STICKER_SIZE, ChatMessageCell.MAX_STICKER_SIZE),
 
         BoolOption(
@@ -400,6 +401,11 @@ object ForkSettings {
                 if (value == true) {
                     MediaDataController.getInstance(account).loadArchivedStickerSets()
                 }
+            StickerSearchBlock.KEY -> {
+                // Refetch trending packs: emptied while the option is on, restored when it is off.
+                MediaDataController.getInstance(account).loadFeaturedStickers(false, false)
+                MediaDataController.getInstance(account).loadFeaturedStickers(true, false)
+            }
             "webSocketTransport", "webSocketDomain" ->
                 ConnectionsManager.setWebSocketEnabled(
                     prefs().getBoolean("webSocketTransport", false),
